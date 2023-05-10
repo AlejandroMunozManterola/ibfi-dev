@@ -372,3 +372,6 @@ pkg.gitcommit
 .ipynb_checkpoints
 /out/build/x64-Debug
 /.vs
+/out/build/x64-Release
+/out/build/x64-RelWithDebInfo
+/CMakeSettings.json
