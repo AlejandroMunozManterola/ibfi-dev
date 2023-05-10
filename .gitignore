@@ -370,3 +370,5 @@ pkg.gitcommit
 
 # Jupyter Notebook Checkpoints
 .ipynb_checkpoints
+/out/build/x64-Debug
+/.vs
