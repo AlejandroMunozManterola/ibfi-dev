@@ -14,6 +14,7 @@
 #include "fem.hpp"
 #include "../general/device.hpp"
 #include <cmath>
+#include <cstddef>
 
 namespace mfem
 {
@@ -108,6 +109,9 @@ BilinearForm::BilinearForm (FiniteElementSpace * f, BilinearForm * bf, int ps)
 
    boundary_face_integs = bf->boundary_face_integs;
    boundary_face_integs_marker = bf->boundary_face_integs_marker;
+
+   internal_boundary_face_integs = bf->internal_boundary_face_integs;
+   internal_boundary_face_integs_marker = bf->internal_boundary_face_integs_marker;
 
    AllocMat();
 }
@@ -278,11 +282,20 @@ void BilinearForm::AddBdrFaceIntegrator(BilinearFormIntegrator *bfi,
    boundary_face_integs_marker.Append(&bdr_marker);
 }
 
-void BilinearForm::AddInteriorBoundaryFaceIntegrator(BilinearFormIntegrator* bfi,
-    Array<int>& int_bdr_marker)
+void BilinearForm::AddInternalBoundaryFaceIntegrator(BilinearFormIntegrator
+    * bfi)
 {
-    interior_boundary_face_integs.Append(bfi);
-    interior_boundary_face_integs_marker.Append(&int_bdr_marker);
+    internal_boundary_face_integs.Append(bfi);
+    // nullptr -> all attributes are active
+    internal_boundary_face_integs_marker.Append(nullptr);
+}
+
+void BilinearForm::AddInternalBoundaryFaceIntegrator(BilinearFormIntegrator
+    * bfi,
+    Array<int>& internal_bdr_attr_marker)
+{
+    internal_boundary_face_integs.Append(bfi);
+    internal_boundary_face_integs_marker.Append(&internal_bdr_attr_marker);
 }
 
 void BilinearForm::ComputeElementMatrix(int i, DenseMatrix &elmat)
@@ -637,61 +650,58 @@ void BilinearForm::Assemble(int skip_zeros)
       }
    }
 
-   if (interior_boundary_face_integs.Size())
+   if (internal_boundary_face_integs.Size())
    {
-       FaceElementTransformations* tr;
-       Array<int> vdofs2;
-       const FiniteElement* fe1, * fe2;
-
-       // Which interior boundary attributes need to be processed?
-       Array<int> int_bdr_attr_marker(mesh->bdr_attributes.Size() ?
+       // Which internal boundary attributes need to be processed?
+       Array<int> bdr_attr_marker(mesh->bdr_attributes.Size() ?
            mesh->bdr_attributes.Max() : 0);
-       int_bdr_attr_marker = 0;
-       for (int k = 0; k < interior_boundary_face_integs.Size(); k++)
+       bdr_attr_marker = 0;
+       for (int k = 0; k < internal_boundary_face_integs.Size(); k++)
        {
-           if (interior_boundary_face_integs_marker[k] == NULL)
+           if (internal_boundary_face_integs_marker[k] == NULL)
            {
-               int_bdr_attr_marker = 1;
+               bdr_attr_marker = 1;
                break;
            }
-           Array<int>& int_bdr_marker = *interior_boundary_face_integs_marker[k];
-           MFEM_ASSERT(int_bdr_marker.Size() == int_bdr_attr_marker.Size(),
-               "invalid boundary marker for boundary face integrator #"
-               << k << ", counting from zero");
-           for (int i = 0; i < int_bdr_attr_marker.Size(); i++)
+           auto& bdr_marker = *internal_boundary_face_integs_marker[k];
+           MFEM_ASSERT(bdr_marker.Size() == bdr_attr_marker.Size(),
+               "invalid boundary marker for internal boundary face "
+               "integrator #" << k << ", counting from zero");
+           for (int i = 0; i < bdr_attr_marker.Size(); i++)
            {
-               int_bdr_attr_marker[i] |= int_bdr_marker[i];
+               bdr_attr_marker[i] |= bdr_marker[i];
            }
        }
 
-       for (int i = 0; i < fes->GetNBE(); i++)
+       Array<int> vdofs2;
+       for (int i = 0; i < mesh->GetNBE(); i++)
        {
-           const int mesh_bdr_attr = mesh->GetBdrAttribute(i);
-           if (int_bdr_attr_marker[mesh_bdr_attr - 1] == 0) { continue; }
+           const int bdr_attr = mesh->GetBdrAttribute(i);
+           if (bdr_attr_marker[bdr_attr - 1] == 0) { continue; }
 
-           tr = mesh->GetInteriorFaceTransformations(mesh->GetBdrFace(i));
-           if (tr != NULL)
+           auto* tr = mesh->GetInternalBdrFaceTransformations(i);
+           if (tr != nullptr)
            {
                fes->GetElementVDofs(tr->Elem1No, vdofs);
                fes->GetElementVDofs(tr->Elem2No, vdofs2);
                vdofs.Append(vdofs2);
-               fe1 = fes->GetFE(tr->Elem1No);
-               fe2 = fes->GetFE(tr->Elem2No);
-               for (int k = 0; k < interior_boundary_face_integs.Size(); k++)
+               const auto* fe1 = fes->GetFE(tr->Elem1No);
+               const auto* fe2 = fes->GetFE(tr->Elem2No);
+               for (int k = 0; k < internal_boundary_face_integs.Size(); k++)
                {
-                   if (interior_boundary_face_integs_marker[k] &&
-                       (*interior_boundary_face_integs_marker[k])[mesh_bdr_attr - 1] == 0)
+                   if (internal_boundary_face_integs_marker[k] &&
+                       (*internal_boundary_face_integs_marker[k])[bdr_attr - 1] == 0)
                    {
                        continue;
                    }
 
-                   interior_boundary_face_integs[k]->AssembleFaceMatrix(*fe1, *fe2, *tr,
-                       elemmat);
+                   internal_boundary_face_integs[k]->AssembleFaceMatrix(
+                       *fe1, *fe2, *tr, elemmat);
                    mat->AddSubMatrix(vdofs, vdofs, elemmat, skip_zeros);
                }
            }
        }
-      }
+   }
 
 #ifdef MFEM_USE_LEGACY_OPENMP
    if (free_element_matrices)
@@ -1206,6 +1216,8 @@ BilinearForm::~BilinearForm()
       { delete interior_face_integs[k]; }
       for (k=0; k < boundary_face_integs.Size(); k++)
       { delete boundary_face_integs[k]; }
+      for (k=0; k < internal_boundary_face_integs.Size(); k++)
+      { delete internal_boundary_face_integs[k]; }
    }
 
    delete ext;
