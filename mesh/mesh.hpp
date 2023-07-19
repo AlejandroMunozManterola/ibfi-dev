@@ -1387,6 +1387,8 @@ public:
    /// @note The returned object should NOT be deleted by the caller.
    FaceElementTransformations *GetBdrFaceTransformations (int BdrElemNo);
 
+   FaceElementTransformations* GetInternalBdrFaceTransformations(int IntBdrElemNo);
+
    /// Return the local face index for the given boundary face.
    int GetBdrFace(int BdrElemNo) const;
 

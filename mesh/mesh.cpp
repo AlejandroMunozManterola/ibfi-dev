@@ -1110,6 +1110,26 @@ FaceElementTransformations *Mesh::GetBdrFaceTransformations(int BdrElemNo)
    return tr;
 }
 
+
+FaceElementTransformations* Mesh::GetInternalBdrFaceTransformations(
+    int IntBdrElemNo)
+{
+    int fn = GetBdrFace(IntBdrElemNo);
+
+    // Check if the face is not interior
+    if (!FaceIsTrueInterior(fn))
+    {
+        return nullptr;
+    }
+
+    auto* tr = GetFaceElementTransformations(fn, 31);
+    tr->Attribute = boundary[IntBdrElemNo]->GetAttribute();
+    tr->ElementNo = IntBdrElemNo;
+    tr->ElementType = ElementTransformation::BDR_FACE;
+    tr->mesh = this;
+    return tr;
+}
+
 int Mesh::GetBdrFace(int BdrElemNo) const
 {
    int fn;
@@ -6224,9 +6244,27 @@ Array<int> Mesh::FindFaceNeighbors(const int elem) const
 
    Array<int> elem_faces;
    Array<int> ori;
-   GetElementFaces(elem, elem_faces, ori);
+   switch (GetElement(elem)->GetType()) {
+       case Element::POINT:
+           MFEM_ABORT("Element Type is Point, cannot have interfaces.");
+           break;
+       case Element::SEGMENT:
+           GetElementVertices(elem, elem_faces);
+           break;
+       case Element::TRIANGLE:
+       case Element::QUADRILATERAL:
+           GetElementEdges(elem, elem_faces, ori);
+           break;
+       case Element::PYRAMID:
+       case Element::WEDGE:
+       case Element::TETRAHEDRON:
+       case Element::HEXAHEDRON:
+           GetElementFaces(elem, elem_faces, ori);
+           break;
+   }
 
    Array<int> nghb;
+   face_to_elem->Finalize();
    for (auto f : elem_faces)
    {
       Array<int> row;
