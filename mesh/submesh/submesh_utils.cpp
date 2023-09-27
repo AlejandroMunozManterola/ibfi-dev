@@ -182,15 +182,52 @@ Array<int> BuildFaceMap(const Mesh& pm, const Mesh& sm,
 {
    // TODO: Check if parent is really a parent of mesh
 
-   Array<int> pfids(sm.GetNFaces());
+   Array<int> pfids;
+   switch (sm.Dimension()) {
+   case 1:
+       pfids.SetSize(sm.GetNV());
+       break;
+   case 2:
+       pfids.SetSize(sm.GetNEdges());
+       break;
+   case 3:
+       pfids.SetSize(sm.GetNFaces());
+       break;
+   default:
+       MFEM_ABORT("Wrong dimension in Submesh @ BuildFaceMap.");
+   }
    pfids = -1;
+
    for (int i = 0; i < sm.GetNE(); i++)
    {
       int peid = parent_element_ids[i];
 
       Array<int> sel_faces, pel_faces, o;
-      sm.GetElementFaces(i, sel_faces, o);
-      pm.GetElementFaces(peid, pel_faces, o);
+
+      MFEM_ASSERT(sm.GetElement(i)->GetType() == pm.GetElement(peid)->GetType(), 
+          "Elements for Parent and SubMesh in BuildFaceMap do not match.");
+
+      switch (sm.GetElement(i)->GetType()) {
+      case Element::POINT:
+          MFEM_ABORT("Element Type is Point, cannot have interfaces.");
+          break;
+      case Element::SEGMENT:
+          sm.GetElementVertices(i, sel_faces);
+          pm.GetElementVertices(peid, pel_faces);
+          break;
+      case Element::TRIANGLE:
+      case Element::QUADRILATERAL:
+          sm.GetElementEdges(i, sel_faces, o);
+          pm.GetElementEdges(peid, pel_faces, o);
+          break;
+      case Element::PYRAMID:
+      case Element::WEDGE:
+      case Element::TETRAHEDRON:
+      case Element::HEXAHEDRON:
+          sm.GetElementFaces(i, sel_faces, o);
+          pm.GetElementFaces(peid, pel_faces, o);
+          break;
+      }
 
       MFEM_ASSERT(sel_faces.Size() == pel_faces.Size(), "internal error");
 

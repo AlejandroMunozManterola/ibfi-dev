@@ -1457,8 +1457,22 @@ Element::Type Mesh::GetFaceElementType(int Face) const
 
 Array<int> Mesh::GetFaceToBdrElMap() const
 {
-   Array<int> face_to_be(NumOfFaces);
+   Array<int> face_to_be;
+   switch (this->Dimension()) {
+   case 1:
+       face_to_be.SetSize(this->NumOfVertices);
+       break;
+   case 2:
+       face_to_be.SetSize(this->NumOfEdges);
+       break;
+   case 3:
+       face_to_be.SetSize(this->NumOfFaces);
+       break;
+   default:
+       MFEM_ABORT("Wrong Dimension @ GetFaceToBdrElMap()");
+   }
    face_to_be = -1;
+
    for (int i = 0; i < NumOfBdrElements; i++)
    {
       face_to_be[GetBdrElementEdgeIndex(i)] = i;
