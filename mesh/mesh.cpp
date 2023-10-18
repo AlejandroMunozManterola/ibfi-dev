@@ -3137,6 +3137,78 @@ void Mesh::Finalize(bool refine, bool fix_orientation)
 #endif
 }
 
+void Mesh::FinalizeNoBdrFix(bool refine, bool fix_element_ori)
+{
+    if (NURBSext || ncmesh)
+    {
+        MFEM_ASSERT(CheckElementOrientation(false) == 0, "");
+        MFEM_ASSERT(CheckBdrElementOrientation() == 0, "");
+        return;
+    }
+
+    // Requirements:
+    //  1) FinalizeTopology() or equivalent was called
+    //  2) if (Nodes == NULL), vertices must be defined
+    //  3) if (Nodes != NULL), Nodes must be defined
+
+    const bool check_orientation = true; // for regular elements, not boundary
+    const bool curved = (Nodes != NULL);
+    const bool may_change_topology =
+        (refine && (Dim > 1 && (meshgen & 1))) ||
+        (check_orientation &&
+            (Dim == 2 || (Dim == 3 && (meshgen & 1))));
+
+    DSTable* old_v_to_v = NULL;
+    Table* old_elem_vert = NULL;
+
+    if (curved && may_change_topology)
+    {
+        PrepareNodeReorder(&old_v_to_v, &old_elem_vert);
+    }
+
+    if (check_orientation)
+    {
+        // check and fix element orientation
+        CheckElementOrientation(fix_element_ori);
+    }
+    if (refine)
+    {
+        MarkForRefinement();   // may change topology!
+    }
+
+    if (may_change_topology)
+    {
+        if (curved)
+        {
+            DoNodeReorder(old_v_to_v, old_elem_vert); // updates the mesh topology
+            delete old_elem_vert;
+            delete old_v_to_v;
+        }
+        else
+        {
+            FinalizeTopology(); // Re-computes some data unnecessarily.
+        }
+
+        // TODO: maybe introduce Mesh::NODE_REORDER operation and FESpace::
+        // NodeReorderMatrix and do Nodes->Update() instead of DoNodeReorder?
+    }
+
+#ifdef MFEM_DEBUG
+    // For non-orientable surfaces/manifolds, the check below will fail, so we
+    // only perform it when Dim == spaceDim.
+    if (Dim >= 2 && Dim == spaceDim)
+    {
+        const int num_faces = GetNumFaces();
+        for (int i = 0; i < num_faces; i++)
+        {
+            MFEM_VERIFY(faces_info[i].Elem2No < 0 ||
+                faces_info[i].Elem2Inf % 2 != 0, "Invalid mesh topology."
+                " Interior face with incompatible orientations.");
+        }
+    }
+#endif
+}
+
 void Mesh::Make3D(int nx, int ny, int nz, Element::Type type,
                   double sx, double sy, double sz, bool sfc_ordering)
 {
@@ -3783,6 +3855,15 @@ Mesh Mesh::LoadFromFile(const char *filename, int generate_edges, int refine,
    if (!imesh) { MFEM_ABORT("Mesh file not found: " << filename << '\n'); }
    else { mesh.Load(imesh, generate_edges, refine, fix_orientation); }
    return mesh;
+}
+
+Mesh Mesh::LoadFromFileNoBdrFix(const char* filename, int generate_edges, int refine, bool fix_element_ori)
+{
+    Mesh mesh;
+    named_ifgzstream imesh(filename);
+    if (!imesh) { MFEM_ABORT("Mesh file not found: " << filename << '\n'); }
+    else { mesh.LoadNoBdrFix(imesh, generate_edges, refine); }
+    return mesh;
 }
 
 Mesh Mesh::MakeCartesian1D(int n, double sx)

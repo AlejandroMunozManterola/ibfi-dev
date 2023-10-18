@@ -601,6 +601,9 @@ public:
                             int generate_edges = 0, int refine = 1,
                             bool fix_orientation = true);
 
+   static Mesh LoadFromFileNoBdrFix(const char* filename,
+       int generate_edges = 0, int refine = 1, bool fix_element_ori = false);
+
    /** Creates 1D mesh , divided into n equal intervals. */
    static Mesh MakeCartesian1D(int n, double sx = 1.0);
 
@@ -819,6 +822,7 @@ public:
        Before calling this method, call FinalizeTopology() and ensure that the
        Mesh vertices or nodes are set. */
    virtual void Finalize(bool refine = false, bool fix_orientation = false);
+   virtual void FinalizeNoBdrFix(bool refine = false, bool fix_element_ori = false);
 
    virtual void SetAttributes();
 
@@ -916,6 +920,13 @@ public:
    {
       Loader(input, generate_edges);
       Finalize(refine, fix_orientation);
+   }
+
+   virtual void LoadNoBdrFix(std::istream& input, int generate_edges = 0,
+       int refine = 1, bool fix_element_ori = false)
+   {
+       Loader(input, generate_edges);
+       FinalizeNoBdrFix(refine, fix_element_ori);
    }
 
    /// Clear the contents of the Mesh.
