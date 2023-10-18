@@ -1033,8 +1033,6 @@ public:
        FinalizeNoBdrFix(refine, fix_element_ori);
    }
 
-   /// Clear the contents of the Mesh.
-   void Clear() { Destroy(); SetEmpty(); }
    /// Equals 1 + num_holes - num_loops
    inline int EulerNumber() const
    { return NumOfVertices - NumOfEdges + NumOfFaces - NumOfElements; }
@@ -1370,9 +1368,6 @@ public:
 
        @sa GetBdrElementAdjacentElement() */
    void GetBdrElementAdjacentElement2(int bdr_el, int &el, int &info) const;
-
-   /// Return the local face index for the given boundary face.
-   int GetBdrFace(int BdrElemNo) const;
 
    /// @}
 
