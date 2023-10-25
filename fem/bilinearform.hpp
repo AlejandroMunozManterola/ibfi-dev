@@ -108,6 +108,7 @@ protected:
 
    /// Set of interior face Integrators to be applied.
    Array<BilinearFormIntegrator*> interior_face_integs;
+   Array<Array<int>*> interior_face_integs_marker; ///< Entries are not owned.
 
    /// Set of boundary face Integrators to be applied.
    Array<BilinearFormIntegrator*> boundary_face_integs;
@@ -419,6 +420,10 @@ public:
 
    /// Adds new interior Face Integrator. Assumes ownership of @a bfi.
    void AddInteriorFaceIntegrator(BilinearFormIntegrator *bfi);
+   
+   /// Adds new interior Face Integrator. Assumes ownership of @a bfi.
+   void AddInteriorFaceIntegrator(BilinearFormIntegrator *bfi, 
+                                  Array<int> &int_marker);
 
    /// Adds new boundary Face Integrator. Assumes ownership of @a bfi.
    void AddBdrFaceIntegrator(BilinearFormIntegrator *bfi);
