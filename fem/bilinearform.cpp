@@ -270,10 +270,10 @@ namespace mfem
 	}
 
 	void BilinearForm::AddInteriorFaceIntegrator(BilinearFormIntegrator* bfi,
-		Array<int>& int_marker)
+		Array<int>& int_marker_ignore)
 	{
 		interior_face_integs.Append(bfi);
-		interior_face_integs_marker.Append(&int_marker);
+		interior_face_integs_marker.Append(&int_marker_ignore); // Marked elements are IGNORED.
 	}
 
 	void BilinearForm::AddBdrFaceIntegrator(BilinearFormIntegrator* bfi)
@@ -650,26 +650,21 @@ namespace mfem
 			}
 
 			auto map{ mesh->GetFaceToBdrElMap() };
+			
 			for (int f = 0; f < mesh->GetNumFaces(); f++) {
-				auto bdrEl = map.Find(f);
+				
+				auto bdrEl = map[f];
 				int int_attr;
-				if (bdrEl == -1) {
-					break;
-				}
-				else {
+				if (bdrEl != -1) {
 					int_attr = mesh->GetBdrAttribute(bdrEl);
-				}
-				int i = 0;
-				for (; i < interior_face_integs.Size(); i++) {
-					if (interior_face_integs_marker[i] &&
-						(*interior_face_integs_marker[i])[int_attr - 1] != 0) {
+					if (int_attr_marker[int_attr - 1] != 0) {
 						continue;
 					}
 				}
 
 				FaceElementTransformations* tr;
 				Array<int> vdofs2;
-				tr = mesh->GetInteriorFaceTransformations(i);
+				tr = mesh->GetInteriorFaceTransformations(f);
 				if (tr != NULL)
 				{
 					fes->GetElementVDofs(tr->Elem1No, vdofs);
