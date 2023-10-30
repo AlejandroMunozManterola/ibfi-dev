@@ -701,8 +701,9 @@ public:
                             int generate_edges = 0, int refine = 1,
                             bool fix_orientation = true);
 
-   static Mesh LoadFromFileNoBdrFix(const char* filename,
-       int generate_edges = 0, int refine = 1, bool fix_element_ori = false);
+   static Mesh LoadFromFileNoBdrFix(const std::string& filename,
+                                    int generate_edges = 0, int refine = 1, 
+                                    bool fix_element_ori = false);
 
    /** Creates 1D mesh , divided into n equal intervals. */
    static Mesh MakeCartesian1D(int n, double sx = 1.0);

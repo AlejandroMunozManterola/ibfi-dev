@@ -3868,7 +3868,7 @@ Mesh Mesh::LoadFromFile(const std::string &filename, int generate_edges,
    return mesh;
 }
 
-Mesh Mesh::LoadFromFileNoBdrFix(const char* filename, int generate_edges, int refine, bool fix_element_ori)
+Mesh Mesh::LoadFromFileNoBdrFix(const std::string& filename, int generate_edges, int refine, bool fix_element_ori)
 {
     Mesh mesh;
     named_ifgzstream imesh(filename);
