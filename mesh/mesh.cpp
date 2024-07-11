@@ -1166,25 +1166,6 @@ void Mesh::ApplyLocalSlaveTransformation(FaceElementTransformations &FT,
    }
 }
 
-FaceElementTransformations *Mesh::GetBdrFaceTransformations(int BdrElemNo)
-{
-   FaceElementTransformations *tr;
-   int fn = GetBdrFace(BdrElemNo);
-
-   // Check if the face is interior, shared, or nonconforming.
-   if (FaceIsTrueInterior(fn) || faces_info[fn].NCFace >= 0)
-   {
-      return NULL;
-   }
-   tr = GetFaceElementTransformations(fn, 21);
-   tr->Attribute = boundary[BdrElemNo]->GetAttribute();
-   tr->ElementNo = BdrElemNo;
-   tr->ElementType = ElementTransformation::BDR_FACE;
-   tr->mesh = this;
-   return tr;
-}
-
-
 FaceElementTransformations* Mesh::GetInternalBdrFaceTransformations(
     int IntBdrElemNo)
 {
@@ -1202,24 +1183,6 @@ FaceElementTransformations* Mesh::GetInternalBdrFaceTransformations(
     tr->ElementType = ElementTransformation::BDR_FACE;
     tr->mesh = this;
     return tr;
-}
-
-int Mesh::GetBdrFace(int BdrElemNo) const
-{
-   int fn;
-   if (Dim == 3)
-   {
-      fn = be_to_face[BdrElemNo];
-   }
-   else if (Dim == 2)
-   {
-      fn = be_to_edge[BdrElemNo];
-   }
-   else
-   {
-      fn = boundary[BdrElemNo]->GetVertices()[0];
-   }
-   return fn;
 }
 
 Mesh::FaceInformation Mesh::GetFaceInformation(int f) const

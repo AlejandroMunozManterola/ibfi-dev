@@ -1769,10 +1769,6 @@ public:
 
    FaceElementTransformations* GetInternalBdrFaceTransformations(int IntBdrElemNo);
 
-   /// Return the local face index for the given boundary face.
-   int GetBdrFace(int BdrElemNo) const;
-   /// @}
-
    /// @anchor mfem_Mesh_geom_factors
    /// @name Access the coordinate transformation at quadrature points
    ///
