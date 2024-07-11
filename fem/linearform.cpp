@@ -1,4 +1,4 @@
-// Copyright (c) 2010-2023, Lawrence Livermore National Security, LLC. Produced
+// Copyright (c) 2010-2024, Lawrence Livermore National Security, LLC. Produced
 // at the Lawrence Livermore National Laboratory. All Rights reserved. See files
 // LICENSE and NOTICE for details. LLNL-CODE-806117.
 //
@@ -27,15 +27,19 @@ LinearForm::LinearForm(FiniteElementSpace *f, LinearForm *lf)
    // Linear forms are stored on the device
    UseDevice(true);
 
-   // Copy the pointers to the integrators
+   // Copy the pointers to the integrators and the corresponding marker arrays
    domain_integs = lf->domain_integs;
+   domain_integs_marker = lf->domain_integs_marker;
 
    domain_delta_integs = lf->domain_delta_integs;
 
    boundary_integs = lf->boundary_integs;
+   boundary_integs_marker = lf->boundary_integs_marker;
 
    boundary_face_integs = lf->boundary_face_integs;
    boundary_face_integs_marker = lf->boundary_face_integs_marker;
+
+   interior_face_integs = lf->interior_face_integs;
 
    internal_boundary_face_integs = lf->internal_boundary_face_integs;
    internal_boundary_face_integs_marker = lf->internal_boundary_face_integs_marker;
@@ -153,7 +157,7 @@ bool LinearForm::SupportsDevice() const
       // Make sure every boundary element corresponds to a boundary face
       for (int be = 0; be < fes->GetNBE(); ++be)
       {
-         const int f = mesh.GetBdrElementEdgeIndex(be);
+         const int f = mesh.GetBdrElementFaceIndex(be);
          const auto face_info = mesh.GetFaceInformation(f);
          if (!face_info.IsBoundary())
          {
@@ -478,7 +482,7 @@ void LinearForm::AssembleDelta()
    }
 }
 
-LinearForm & LinearForm::operator=(double value)
+LinearForm & LinearForm::operator=(real_t value)
 {
    Vector::operator=(value);
    return *this;
