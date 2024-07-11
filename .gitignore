@@ -22,6 +22,7 @@ CMakeFiles/
 /mfem/
 
 # Typical build directory
+/out/
 /build/
 
 # Generated files in main directory, config/ and docs/
