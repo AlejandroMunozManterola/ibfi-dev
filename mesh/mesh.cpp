@@ -1169,7 +1169,7 @@ void Mesh::ApplyLocalSlaveTransformation(FaceElementTransformations &FT,
 FaceElementTransformations* Mesh::GetInternalBdrFaceTransformations(
     int IntBdrElemNo)
 {
-    int fn = GetBdrFace(IntBdrElemNo);
+    int fn = GetBdrElementFaceIndex(IntBdrElemNo);
 
     // Check if the face is not interior
     if (!FaceIsTrueInterior(fn))
