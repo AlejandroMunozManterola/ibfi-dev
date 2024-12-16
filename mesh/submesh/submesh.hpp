@@ -111,6 +111,16 @@ public:
    }
 
    /**
+    * @brief Get the edge id map
+    *
+    * SubMesh element id (array index) to parent Mesh edge id.
+    */
+   const Array<int>& GetParentEdgeIDMap() const
+   {
+       return parent_edge_ids_;
+   }
+
+   /**
     * @brief Get the face id map
     *
     * SubMesh element id (array index) to parent Mesh face id.
